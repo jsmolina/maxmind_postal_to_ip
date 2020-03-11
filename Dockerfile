@@ -1,0 +1,40 @@
+FROM python:3.7-slim
+
+
+ENV APP_ROOT=/app
+
+RUN pip3 install hypercorn uvloop
+
+WORKDIR $APP_ROOT
+EXPOSE 8080
+
+COPY requirements.txt $APP_ROOT/requirements.txt
+RUN pip3 install Cython
+RUN pip3 install -r requirements.txt
+RUN rm $APP_ROOT/requirements.txt
+
+
+COPY maxmind/server.py $APP_ROOT/server.py
+
+
+ENV TZ=UTC
+
+ARG APPLICATION_NAME=devel
+ARG APPLICATION_VERSION=devel
+ARG APPLICATION_PORT=8080
+ARG APPLICATION_HOST=0.0.0.0
+ARG APPLICATION_ENV=production
+ARG APPLICATION_INSTANCE=${APPLICATION_NAME}
+
+ENV APPLICATION_NAME=${APPLICATION_NAME}
+ENV APPLICATION_VERSION=${APPLICATION_VERSION}
+ENV APPLICATION_PORT=${APPLICATION_PORT}
+ENV APPLICATION_HOST=${APPLICATION_HOST}
+ENV APPLICATION_ENV=${APPLICATION_ENV}
+ENV APPLICATION_INSTANCE=${APPLICATION_INSTANCE}
+
+CMD hypercorn "server:application()" \
+    --worker-class uvloop --workers 2 \
+    --bind "${APPLICATION_HOST}:${APPLICATION_PORT}" \
+    --access-log - \
+    --error-log -
